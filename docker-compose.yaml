@@ -1,0 +1,43 @@
+version: '3.8'
+
+
+
+services:
+  python:
+    
+    build:
+      context: ./py
+      dockerfile: Dockerfile
+    volumes:
+      - ./py:/app
+    ports:
+      - "8080:8080"
+    tty: true
+    depends_on:
+      - node
+    restart: always
+  
+  node:
+    build: 
+      context: ./node
+      dockerfile: Dockerfile
+    volumes:
+      - ./node:/app
+    ports:
+      - "3000:3000"
+    tty: true
+    depends_on:
+      - rabbitmq
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    volumes:
+      - ./rabbitmq/data/:/var/lib/rabbitmq/
+      - ./rabbitmq/log/:/var/log/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "8081:8080"
+    tty: true
+  

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <input type="file" name="" id="file">
+    <button id="btn">上传</button>
+
+    <script>
+        var btn = document.getElementById('btn');
+        btn.onclick = function () {
+            var file = document.getElementById('file');
+            var formData = new FormData();
+            formData.append('file', file.files[0]);
+            var xhr = new XMLHttpRequest();
+            xhr.open('post', '/upload', true);
+            xhr.send(formData);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    console.log(xhr.responseText);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
