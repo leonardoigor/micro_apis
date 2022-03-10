@@ -1,39 +1,44 @@
+from uuid import uuid4
 import pika
 import time
 import numpy as np
-import base64
-import io
-import json
+
+import requests
+from PIL import Image
+from io import BytesIO
+
 connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
 channel = connection.channel()
 
 
 def callback(ch, method, properties, body):
-    body = json.loads(body)
-    content = body['content']
-    from64 = base64.b64decode(content)
-    toImg = io.BytesIO(from64)
-    shape = body['shape']
-    w, h = int(shape['width']), int(shape['height'])
-    img = np.asarray(bytearray(toImg.read()), dtype=np.uint64)
-    print(img.shape, w*h)
-    # img = img.reshape((h, w, 3))
-    print(img.shape)
-    # time.sleep(50)
-    # content = json.loads(content, encoding="ISO8859")
-    print(content)
-    print(f" [x] Received {type(content)} {w} {h}")
-    # img = np.reshape(content, (-1, 20))
-    # print(content.shape, w*h)
+    base_url = "http://node:3000/"
+    try:
+        url_from_micro = str(body.decode('utf-8'))
+        url = f"{base_url}{url_from_micro}"
+        extension = url.split('.')[-1]
+        extension = extension.lower()
+        res = requests.get(url)
+        # img_arr = Image.open(BytesIO(res.content))
 
-    print("ack")
-    uuid = np.random.randint(0, 100)
-    # save to file
-    with open(f"./data_{uuid}_.jpg", "wb") as f:
-        f.write(img)
+        uuid = str(uuid4())
+        file_name = url_from_micro.split('/')[-1]
+        # save image
+        # img_arr.save(f"./uploads/data_{uuid}.{extension}")
+        with(open(f"./uploads/data_{uuid}.{extension}", 'wb')) as f:
+            f.write(res.content)
 
-    ch.basic_ack(delivery_tag=method.delivery_tag)
-    print(method.delivery_tag)
+        url_del = f"{base_url}delete_img"
+        response = requests.post(
+            url_del, json={'file_name': file_name})
+
+        print(response.text, url_del)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+
+    except Exception as e:
+        ch.basic_nack(delivery_tag=method.delivery_tag)
+        print(e)
+        pass
 
     # time.sleep(5)
 

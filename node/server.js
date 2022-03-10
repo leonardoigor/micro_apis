@@ -2,7 +2,7 @@ const express = require('express');
 var amqp = require('amqplib/callback_api');
 const formData = require('express-form-data');
 const fs = require('fs');
-var sizeOf = require('image-size');
+const { saveImage, deleteImage } = require('./src/save_image');
 
 
 
@@ -31,7 +31,7 @@ amqp.connect(amqpURI, function (error0, connection) {
 
 
         //api routes
-        app.post('/upload', (req, res) => {
+        app.post('/upload', async (req, res) => {
             console.log('upload');
             let queue = 'hello';
             let files = req.files;
@@ -39,27 +39,24 @@ amqp.connect(amqpURI, function (error0, connection) {
             // let decode64 = new Buffer(img, 'base64');
             let path = img.path
             let img_loaded = fs.readFileSync(path);
-            img_loaded = {
-                content: img_loaded.toString('base64'),
-                shape: img.originalname
-            }
-            let shape = {
-                width: 0,
-                height: 0
-            }
-            sizeOf(path, function (err, dimensions) {
-                shape.width = dimensions.width;
-                shape.height = dimensions.height;
-                img_loaded['shape'] = shape;
-                console.log(img_loaded)
-                img_loaded = Buffer.from(JSON.stringify(img_loaded));
-                channel.assertQueue(queue, { durable: true });
-                channel.sendToQueue(queue, img_loaded);
-            });
+            var path_saved = await saveImage(img_loaded, img.name);
+            let host = `${path_saved}`;
+            let payload = Buffer.from(host)
+            channel.assertQueue(queue, { durable: true });
+            channel.sendToQueue(queue, payload);
+
 
             res.send('upload');
         })
+        app.post('/delete_img', async (req, res) => {
+            console.log('delete');
+            const { file_name } = req.body
+            console.log(file_name);
 
+            // delete file
+            var result = await deleteImage(file_name);
+            res.send(result);
+        })
         // listen
         app.listen(port, () => {
             console.log(`Server running at ${URI}:${port}/`);
