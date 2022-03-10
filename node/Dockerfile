@@ -7,6 +7,6 @@ COPY  . /app
 
 WORKDIR /app
 
-RUN yarn
+# RUN yarn install --cwd /app
 
-CMD ["yarn", "start"]
+CMD ["sh", "-c","yarn;yarn start"]
